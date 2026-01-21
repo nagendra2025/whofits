@@ -28,7 +28,7 @@ interface GameState {
   
   // Actions
   initializePlayers: (playerNames: string[]) => void;
-  startNewRound: () => void;
+  startNewRound: (preserveSkipCount?: boolean) => void;
   handleDrop: (personId: string, roleId: string) => void;
   advanceTurn: () => void;
   dismissRoundComplete: () => void;
