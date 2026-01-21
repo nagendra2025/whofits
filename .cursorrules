@@ -1,0 +1,200 @@
+# .cursorrules — WhoFits? (Caricature Drag-and-Drop Role Game) — src/ structure + @/* alias
+
+You are an expert full-stack engineer building a production-ready MVP of a web game called "WhoFits?" using:
+- Next.js App Router (latest) + TypeScript
+- Tailwind CSS
+- dnd-kit for drag & drop
+- Zustand for state
+Project is created with: --src-dir and --import-alias "@/*"
+So ALL app code lives under /src and imports use "@/*".
+No backend, no database, no Supabase, no OpenAI in MVP.
+
+PRIMARY GOAL
+Build a single-page drag-and-drop game:
+- Right side shows 2 draggable portrait cards (caricature illustrations).
+- Left side shows 5 droppable role placeholders.
+- Exactly 2 placeholders are correct (one for each portrait), 3 are wrong.
+- Correct drop locks the card, reveals identity details, and awards points based on attempts.
+- Wrong drop increments attempts and gives feedback (shake/reject).
+
+NON-GOALS (DO NOT IMPLEMENT IN MVP)
+- No authentication, no leaderboards, no persistence across refresh, no Supabase.
+- No OpenAI calls.
+- No real photos. Use local caricature avatars from /public/avatars.
+
+PROJECT STRUCTURE (REQUIRED: src/)
+Use this folder layout:
+
+/src
+  /app
+    layout.tsx
+    page.tsx                 # main game screen
+  /components
+    PlayerSetupModal.tsx     # ask number of players (1-5) before starting
+    Scoreboard.tsx           # show players + scores + active player
+    GameBoard.tsx            # overall layout left/right
+    DraggableCard.tsx        # portrait card using dnd-kit useDraggable
+    DropZone.tsx             # placeholder using dnd-kit useDroppable
+    RevealCard.tsx           # shows name/country/company after correct drop
+  /data
+    people.ts                # curated dataset (Person[])
+    roles.ts                 # roles list (Role[])
+  /lib
+    round.ts                 # round generation logic
+    scoring.ts               # scoring function and attempt rules
+    utils.ts                 # helper utilities (shuffle, randomPick, etc.)
+  /store
+    gameStore.ts             # Zustand store for players, round, attempts, turn
+  /types
+    game.ts                  # shared types
+
+/public
+  /avatars                   # caricature svg/png assets (NOT under src)
+
+IMPORT RULES (IMPORTANT)
+- Use absolute imports with alias:
+  import X from "@/components/X"
+  import { ... } from "@/lib/..."
+- Do NOT use relative ../../../ imports unless unavoidable.
+
+DATA MODEL (REQUIRED TYPES)
+Define these types in /src/types/game.ts:
+
+Role:
+- id: string                # stable id like "president", "ceo"
+- label: string             # display label like "President"
+- category?: 'politics'|'business'|'arts'|'science'|'sports'|'other'
+
+Person:
+- id: string
+- name: string
+- roles: string[]           # MUST contain Role.id values, not labels
+- country?: string | null
+- company?: string | null
+- avatarPath: string        # "/avatars/einstein.svg"
+- difficulty?: 1|2|3|4|5
+
+Round:
+- id: string
+- people: Person[]          # exactly 2
+- placeholders: string[]    # exactly 5 Role.id values
+- correctMap: Record<string, string>  # personId -> correct Role.id for this round
+
+AttemptState:
+- [personId]: number        # wrong attempts used so far (0..5)
+
+PlacedState:
+- [personId]: string | null # roleId where it is placed (null if not placed)
+
+GAME RULES (MUST IMPLEMENT)
+1) Player setup
+- On first load, show modal asking number of players (1..5).
+- Initialize players: Player 1..N with score 0.
+- Set activePlayerIndex = 0.
+
+2) Turn-based flow (MVP)
+- One player plays one round (both portraits).
+- When BOTH portraits are correctly placed and locked:
+  - Show a brief "Round Complete" indicator (non-blocking).
+  - Advance activePlayerIndex = (activePlayerIndex + 1) % playerCount
+  - Generate next round and reset attempts/placements for new round.
+
+3) Round generation
+- Select 2 distinct people randomly from dataset.
+- For each selected person, choose ONE correct roleId for this round:
+  - If person has multiple roles, pick one randomly.
+- Build placeholders (roleIds):
+  - Include the two chosen correct roleIds.
+  - Add 3 wrong roleIds:
+    - Must NOT equal either chosen correct roleId.
+    - Prefer roleIds that are not in either person’s roles.
+  - Shuffle the 5 placeholders.
+- Ensure placeholders contain no duplicates.
+
+4) Drag & drop behavior (dnd-kit)
+- Two DraggableCards with unique draggable ids: "person:<personId>"
+- Five DropZones with droppable ids: "role:<roleId>"
+- On drag end:
+  - If dropped outside a DropZone: do nothing.
+  - If DropZone already contains a card: reject (NO swapping in MVP).
+  - If person is already locked (correctly placed): ignore.
+
+5) Validation
+- A drop is correct ONLY if:
+  droppedRoleId === round.correctMap[personId]
+
+- On correct:
+  - Lock the card to that DropZone (cannot be moved).
+  - Compute score by attempt number (see scoring).
+  - Add score to active player's total.
+  - Reveal identity info for that person:
+    - If roleId is "president" or "prime_minister" => show name + country + role label
+    - If roleId is "ceo" or "cto" => show name + company + role label
+    - Else show name + role label (+ country if exists)
+
+- On wrong:
+  - Increment attempts for that person.
+  - Provide UI feedback (shake card or highlight red).
+  - Do NOT lock.
+  - After 5 wrong attempts, still allow scoring on correct drop with attempt capped to 5.
+
+SCORING (MUST MATCH EXACTLY)
+Points awarded when the person becomes correct:
+- attempt 1 => 100
+- attempt 2 => 50
+- attempt 3 => 20
+- attempt 4 => 10
+- attempt 5 => 5
+
+Definition:
+- attemptsUsed = number of wrong drops so far (0..5)
+- attemptNumber = min(5, attemptsUsed + 1)
+- award points based on attemptNumber at the moment it becomes correct
+
+UI/UX REQUIREMENTS (MUST)
+- Clean responsive layout:
+  - Top: Scoreboard with up to 5 players, highlight active player.
+  - Main: Left column (DropZones), Right column (DraggableCards).
+- DropZones:
+  - consistent size; label text large enough.
+  - hover state when draggable over.
+  - correct state after lock.
+- Draggable cards:
+  - show avatar image only before correct.
+  - after correct placement, show RevealCard (name + country/company) near the placed card.
+- Animations: only CSS transitions (Tailwind). No external animation libs.
+
+ACCESSIBILITY
+- Provide alt text for avatars.
+- Buttons and modals are keyboard-focusable.
+- Clear text labels and focus rings.
+
+ENGINEERING QUALITY
+- TypeScript strict: no `any`.
+- No client-side fetch required (all local dataset).
+- Use Server Components where possible, but drag/drop parts must be Client Components.
+- Use "use client" only where needed.
+- Keep state in Zustand; avoid prop drilling.
+- Add guards to avoid invalid rounds.
+
+ERROR HANDLING
+- If dataset has fewer than 2 people, show an error message.
+- If placeholders cannot be generated, fallback to deterministic placeholders.
+
+TEST DATA (MVP DATASET)
+In /src/data/people.ts provide at least 10 sample people:
+- Use avatarPath values that exist or placeholders like "/avatars/einstein.svg".
+In /src/data/roles.ts provide role list matching Role.id values used in people.roles.
+
+DELIVERABLES
+- Working game at / (src/app/page.tsx)
+- Player setup modal (1..5)
+- Round generator
+- Drag & drop + scoring + turn rotation
+- Clean styling with Tailwind
+- No Supabase, no OpenAI, no external image dependencies
+
+When creating code:
+- Prefer clarity over cleverness.
+- Add comments only where logic is non-obvious.
+- Ensure the app runs with `npm run dev` with no extra setup.

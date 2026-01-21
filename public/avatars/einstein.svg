@@ -1,0 +1,31 @@
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Background -->
+  <rect width="200" height="200" fill="#f3f4f6"/>
+  
+  <!-- Wild white hair -->
+  <path d="M 50 30 Q 30 20, 20 40 Q 10 60, 20 80 Q 25 100, 40 90 Q 60 85, 80 90 Q 100 95, 120 90 Q 140 85, 160 90 Q 175 100, 180 80 Q 190 60, 180 40 Q 170 20, 150 30 Q 130 25, 100 30 Q 70 25, 50 30 Z" fill="#ffffff" stroke="#d1d5db" stroke-width="2"/>
+  
+  <!-- Face -->
+  <ellipse cx="100" cy="100" rx="50" ry="60" fill="#fdbcb4"/>
+  
+  <!-- Mustache -->
+  <path d="M 70 120 Q 85 130, 100 125 Q 115 130, 130 120" stroke="#ffffff" stroke-width="4" fill="none" stroke-linecap="round"/>
+  
+  <!-- Eyes -->
+  <circle cx="85" cy="90" r="4" fill="#000"/>
+  <circle cx="115" cy="90" r="4" fill="#000"/>
+  
+  <!-- Eyebrows -->
+  <path d="M 75 80 Q 85 75, 95 80" stroke="#ffffff" stroke-width="3" fill="none"/>
+  <path d="M 105 80 Q 115 75, 125 80" stroke="#ffffff" stroke-width="3" fill="none"/>
+  
+  <!-- Nose -->
+  <ellipse cx="100" cy="105" rx="8" ry="12" fill="#e8a5a0"/>
+  
+  <!-- Mouth -->
+  <path d="M 90 135 Q 100 140, 110 135" stroke="#000" stroke-width="2" fill="none"/>
+  
+  <!-- Body/shirt -->
+  <rect x="60" y="160" width="80" height="40" fill="#4b5563" rx="5"/>
+</svg>
+

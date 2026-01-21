@@ -1,0 +1,32 @@
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Background -->
+  <rect width="200" height="200" fill="#f3f4f6"/>
+  
+  <!-- Face -->
+  <ellipse cx="100" cy="110" rx="50" ry="60" fill="#fdbcb4"/>
+  
+  <!-- Dark hair -->
+  <ellipse cx="100" cy="55" rx="45" ry="30" fill="#1f2937"/>
+  <rect x="55" y="55" width="90" height="40" fill="#1f2937" rx="15"/>
+  
+  <!-- Distinctive jaw/chin -->
+  <ellipse cx="100" cy="165" rx="35" ry="20" fill="#fdbcb4"/>
+  
+  <!-- Eyes -->
+  <ellipse cx="85" cy="95" rx="8" ry="6" fill="#000"/>
+  <ellipse cx="115" cy="95" rx="8" ry="6" fill="#000"/>
+  
+  <!-- Eyebrows -->
+  <path d="M 75 85 Q 85 80, 95 85" stroke="#1f2937" stroke-width="4" fill="none"/>
+  <path d="M 105 85 Q 115 80, 125 85" stroke="#1f2937" stroke-width="4" fill="none"/>
+  
+  <!-- Nose -->
+  <ellipse cx="100" cy="110" rx="6" ry="12" fill="#e8a5a0"/>
+  
+  <!-- Mouth - neutral/slight smile -->
+  <path d="M 90 130 Q 100 135, 110 130" stroke="#000" stroke-width="2" fill="none"/>
+  
+  <!-- Shirt -->
+  <rect x="65" y="170" width="70" height="30" fill="#3b82f6" rx="5"/>
+</svg>
+
