@@ -33,3 +33,4 @@ After downloading caricatures, ensure they're named correctly:
 
 Place all files in `public/avatars/` directory.
 
+

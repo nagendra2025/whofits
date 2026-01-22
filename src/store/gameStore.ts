@@ -7,6 +7,22 @@ import { people } from '@/data/people';
 import { roles } from '@/data/roles';
 import { getScoreForAttempt, calculateAttemptNumber } from '@/lib/scoring';
 
+// Helper functions to calculate rounds and skip counts based on player count
+function getTotalRounds(playerCount: number): number {
+  // 1 player = 4 rounds, 2 players = 8 rounds, 3 players = 9 rounds, 4 players = 12 rounds, 5 players = 20 rounds
+  if (playerCount === 1) return 4;
+  if (playerCount === 2) return 8;
+  if (playerCount === 5) return 20;
+  return playerCount * 3;
+}
+
+function getSkipCountPerPlayer(playerCount: number): number {
+  // 1-2 players = 2 skips each, 3-4 players = 1 skip each, 5 players = 2 skips each
+  if (playerCount <= 2) return 2;
+  if (playerCount === 5) return 2;
+  return 1;
+}
+
 interface GameState {
   // Player setup
   players: Player[];
@@ -16,15 +32,18 @@ interface GameState {
   // Round state
   currentRound: Round | null;
   currentRoundNumber: number;
+  totalRounds: number; // Total rounds for this game based on player count
   roundScores: RoundScore[]; // All completed rounds
   attempts: AttemptState;
   placed: PlacedState;
   currentRoundScore: Record<string, number>; // playerId -> score for current round
-  skipCount: Record<string, number>; // playerId -> skip count for current round (max 2)
+  skipCount: Record<string, number>; // playerId -> skip count for current round
+  maxSkipCount: number; // Maximum skip count per player for this game
+  hasStartedPlaying: Record<string, boolean>; // playerId -> whether player has started playing (made a move)
   
   // UI state
   showRoundComplete: boolean;
-  showGameComplete: boolean; // Show prompt for new game after 4 rounds
+  showGameComplete: boolean; // Show prompt for new game after all rounds complete
   
   // Actions
   initializePlayers: (playerNames: string[]) => void;
@@ -43,11 +62,14 @@ export const useGameStore = create<GameState>((set, get) => ({
   isSetupComplete: false,
   currentRound: null,
   currentRoundNumber: 0,
+  totalRounds: 4, // Default to 4 rounds
   roundScores: [],
   attempts: {},
   placed: {},
   currentRoundScore: {},
   skipCount: {},
+  maxSkipCount: 2, // Default to 2 skips
+  hasStartedPlaying: {}, // Track which players have started playing
   showRoundComplete: false,
   showGameComplete: false,
 
@@ -59,12 +81,28 @@ export const useGameStore = create<GameState>((set, get) => ({
       roundScores: [],
     }));
 
+    const playerCount = newPlayers.length;
+    const totalRounds = getTotalRounds(playerCount);
+    const maxSkipCount = getSkipCountPerPlayer(playerCount);
+
+    // Initialize skip count for each player
+    const initialSkipCount: Record<string, number> = {};
+    const initialHasStartedPlaying: Record<string, boolean> = {};
+    newPlayers.forEach(player => {
+      initialSkipCount[player.id] = 0; // Start with 0 skips used
+      initialHasStartedPlaying[player.id] = false; // No player has started playing yet
+    });
+
     set({
       players: newPlayers,
       activePlayerIndex: 0,
       isSetupComplete: true,
       currentRoundNumber: 1,
       currentRoundScore: {},
+      totalRounds: totalRounds,
+      maxSkipCount: maxSkipCount,
+      skipCount: initialSkipCount,
+      hasStartedPlaying: initialHasStartedPlaying,
     });
 
     // Start first round
@@ -98,21 +136,29 @@ export const useGameStore = create<GameState>((set, get) => ({
       currentRoundScore: {},
     };
 
-    // Only reset skip count if not preserving it (i.e., it's a new round, not a skip)
-    if (preserveSkipCount) {
-      // Explicitly preserve the current skip count
-      updateData.skipCount = state.skipCount;
-    } else {
-      // Reset skip count for new round
-      updateData.skipCount = {};
-    }
+    // ALWAYS preserve skip count across rounds - skip count persists for the entire game
+    // Skip count is tracked per player and only resets when a new game starts
+    // If skip count doesn't exist for a player, initialize it to 0
+    const preservedSkipCount: Record<string, number> = {};
+    state.players.forEach(player => {
+      preservedSkipCount[player.id] = state.skipCount[player.id] || 0;
+    });
+    updateData.skipCount = preservedSkipCount;
+
+    // Reset hasStartedPlaying for all players when starting a new round
+    // This allows each player to skip at the start of their turn (if they have skips remaining)
+    const resetHasStartedPlaying: Record<string, boolean> = {};
+    state.players.forEach(player => {
+      resetHasStartedPlaying[player.id] = false;
+    });
+    updateData.hasStartedPlaying = resetHasStartedPlaying;
 
     set(updateData);
   },
 
   handleDrop: (personId: string, roleId: string) => {
     const state = get();
-    const { currentRound, attempts, placed, players, activePlayerIndex, currentRoundScore } = state;
+    const { currentRound, attempts, placed, players, activePlayerIndex, currentRoundScore, hasStartedPlaying } = state;
 
     if (!currentRound) return;
 
@@ -122,6 +168,15 @@ export const useGameStore = create<GameState>((set, get) => ({
     // Check if correct
     const correctRoleId = currentRound.correctMap[personId];
     const isCorrect = roleId === correctRoleId;
+
+    // Mark the active player as having started playing (they made a move)
+    const activePlayerId = players[activePlayerIndex]?.id;
+    const updatedHasStartedPlaying = activePlayerId && !hasStartedPlaying[activePlayerId]
+      ? {
+          ...hasStartedPlaying,
+          [activePlayerId]: true,
+        }
+      : hasStartedPlaying;
 
     if (isCorrect) {
       // Calculate score
@@ -134,10 +189,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       updatedPlayers[activePlayerIndex].score += points;
 
       // Update current round score
-      const activePlayerId = updatedPlayers[activePlayerIndex].id;
+      const activePlayerIdForScore = updatedPlayers[activePlayerIndex].id;
       const updatedRoundScore = {
         ...currentRoundScore,
-        [activePlayerId]: (currentRoundScore[activePlayerId] || 0) + points,
+        [activePlayerIdForScore]: (currentRoundScore[activePlayerIdForScore] || 0) + points,
       };
 
       // Lock the card
@@ -147,6 +202,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         players: updatedPlayers,
         placed: updatedPlaced,
         currentRoundScore: updatedRoundScore,
+        hasStartedPlaying: updatedHasStartedPlaying,
       });
 
       // Check if round is complete (all 3 portraits placed)
@@ -188,8 +244,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
         const updatedRoundScores = [...stateAfter.roundScores, newRoundScore];
 
-        // Check if we've completed 4 rounds
-        const isGameComplete = updatedRoundScores.length >= 4;
+        // Check if we've completed all rounds (based on player count)
+        const isGameComplete = updatedRoundScores.length >= stateAfter.totalRounds;
 
         set({
           players: playersWithRoundScores,
@@ -211,13 +267,26 @@ export const useGameStore = create<GameState>((set, get) => ({
         ...attempts,
         [personId]: Math.min(5, (attempts[personId] || 0) + 1),
       };
-      set({ attempts: updatedAttempts });
+      
+      // Mark the active player as having started playing (they made a move, even if wrong)
+      const activePlayerIdForWrong = players[activePlayerIndex]?.id;
+      const updatedHasStartedPlayingForWrong = activePlayerIdForWrong && !hasStartedPlaying[activePlayerIdForWrong]
+        ? {
+            ...hasStartedPlaying,
+            [activePlayerIdForWrong]: true,
+          }
+        : hasStartedPlaying;
+      
+      set({ 
+        attempts: updatedAttempts,
+        hasStartedPlaying: updatedHasStartedPlayingForWrong,
+      });
     }
   },
 
   advanceTurn: () => {
     const state = get();
-    const { players, activePlayerIndex, currentRoundNumber } = state;
+    const { players, activePlayerIndex, currentRoundNumber, totalRounds, roundScores } = state;
     
     // Cycle through players: works for any number of players (2, 3, 4, 5, etc.)
     const nextPlayerIndex = (activePlayerIndex + 1) % players.length;
@@ -229,6 +298,15 @@ export const useGameStore = create<GameState>((set, get) => ({
       : currentRoundNumber;
     
     const isNewRound = nextRoundNumber > currentRoundNumber;
+
+    // Check if we've completed all rounds and it's time for a new game prompt
+    if (roundScores.length >= totalRounds && nextRoundNumber > totalRounds) {
+      set({
+        showRoundComplete: false,
+        showGameComplete: true, // Trigger game complete prompt
+      });
+      return;
+    }
     
     set({
       activePlayerIndex: nextPlayerIndex,
@@ -249,11 +327,14 @@ export const useGameStore = create<GameState>((set, get) => ({
       isSetupComplete: false,
       currentRound: null,
       currentRoundNumber: 0,
+      totalRounds: 4,
       roundScores: [],
       attempts: {},
       placed: {},
       currentRoundScore: {},
       skipCount: {},
+      maxSkipCount: 2,
+      hasStartedPlaying: {},
       showRoundComplete: false,
       showGameComplete: false,
     });
@@ -267,6 +348,18 @@ export const useGameStore = create<GameState>((set, get) => ({
       roundScores: [], // Reset round-by-round scores
     }));
     
+    // Reset skip count for all players
+    const resetSkipCount: Record<string, number> = {};
+    updatedPlayers.forEach(player => {
+      resetSkipCount[player.id] = 0;
+    });
+    
+    // Reset hasStartedPlaying for all players
+    const resetHasStartedPlaying: Record<string, boolean> = {};
+    updatedPlayers.forEach(player => {
+      resetHasStartedPlaying[player.id] = false;
+    });
+    
     set({
       players: updatedPlayers,
       roundScores: [],
@@ -275,7 +368,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       showGameComplete: false,
       showRoundComplete: false,
       currentRoundScore: {},
-      skipCount: {},
+      skipCount: resetSkipCount,
+      hasStartedPlaying: resetHasStartedPlaying,
     });
     // Start first round of new game
     get().startNewRound();
@@ -283,7 +377,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   skipRound: () => {
     const state = get();
-    const { players, activePlayerIndex, skipCount: currentSkipCount } = state;
+    const { players, activePlayerIndex, skipCount: currentSkipCount, maxSkipCount } = state;
     
     if (!players[activePlayerIndex]) return;
     
@@ -291,8 +385,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     const activePlayerId = players[activePlayerIndex].id;
     const currentSkips = currentSkipCount[activePlayerId] || 0;
     
-    // Check if player has skips remaining (each player gets 2 skips per round)
-    if (currentSkips >= 2) {
+    // Check if player has skips remaining (based on maxSkipCount for this game)
+    if (currentSkips >= maxSkipCount) {
       return; // No more skips allowed for this player
     }
     

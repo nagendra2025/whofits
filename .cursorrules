@@ -198,3 +198,4 @@ When creating code:
 - Prefer clarity over cleverness.
 - Add comments only where logic is non-obvious.
 - Ensure the app runs with `npm run dev` with no extra setup.
+

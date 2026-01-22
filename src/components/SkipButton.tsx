@@ -7,6 +7,8 @@ export function SkipButton() {
   const players = useGameStore((state) => state.players);
   const activePlayerIndex = useGameStore((state) => state.activePlayerIndex);
   const skipCount = useGameStore((state) => state.skipCount);
+  const maxSkipCount = useGameStore((state) => state.maxSkipCount);
+  const hasStartedPlaying = useGameStore((state) => state.hasStartedPlaying);
   const skipRound = useGameStore((state) => state.skipRound);
   const [isPressed, setIsPressed] = useState(false);
 
@@ -18,11 +20,14 @@ export function SkipButton() {
 
   // Each player has their own independent skip count tracked by player ID
   const currentSkips = skipCount[activePlayer.id] || 0;
-  const skipsRemaining = 2 - currentSkips;
+  const skipsRemaining = maxSkipCount - currentSkips;
+  const playerHasStarted = hasStartedPlaying[activePlayer.id] || false;
 
-  // Hide button if this player has used all 2 skips
+  // Hide button if:
+  // 1. This player has used all their skips, OR
+  // 2. This player has started playing (made a move)
   // Each player's skip count is independent, so button visibility is per-player
-  if (currentSkips >= 2 || skipsRemaining <= 0) return null;
+  if (currentSkips >= maxSkipCount || skipsRemaining <= 0 || playerHasStarted) return null;
 
   const handleClick = () => {
     setIsPressed(true);

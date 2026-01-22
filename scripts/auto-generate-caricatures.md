@@ -48,3 +48,4 @@ Once you have the PNG files:
 
 The application will work perfectly once you add the caricature PNG files!
 
+

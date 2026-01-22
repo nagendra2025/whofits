@@ -13,3 +13,4 @@ export function calculateAttemptNumber(attemptsUsed: number): number {
   return Math.min(5, attemptsUsed + 1);
 }
 
+

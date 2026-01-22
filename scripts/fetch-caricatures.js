@@ -81,3 +81,4 @@ async function fetchCaricatures() {
 // Run the script
 fetchCaricatures().catch(console.error);
 
+

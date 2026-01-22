@@ -62,3 +62,4 @@ The application code is **ready** and will automatically display caricatures onc
 
 If you need assistance finding specific caricatures or have questions about the setup, let me know!
 
+
