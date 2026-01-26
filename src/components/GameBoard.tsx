@@ -14,7 +14,29 @@ export function GameBoard() {
   const placed = useGameStore((state) => state.placed);
   const handleDrop = useGameStore((state) => state.handleDrop);
   const showRoundComplete = useGameStore((state) => state.showRoundComplete);
+  const showGameComplete = useGameStore((state) => state.showGameComplete);
+  const players = useGameStore((state) => state.players);
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  // Determine the winner (player with highest total score)
+  const getWinner = () => {
+    if (players.length === 0) return null;
+    let winner = players[0];
+    let maxScore = players[0].score;
+    
+    for (const player of players) {
+      if (player.score > maxScore) {
+        maxScore = player.score;
+        winner = player;
+      }
+    }
+    
+    // Check for ties
+    const winners = players.filter(p => p.score === maxScore);
+    return winners.length === 1 ? winner : null; // Return null if there's a tie
+  };
+  
+  const winner = getWinner();
 
   if (!currentRound) {
     return (
@@ -76,15 +98,15 @@ export function GameBoard() {
       <div className="flex flex-col gap-4">
         {/* Drop Zones Card */}
         <div className="flex gap-2 items-start">
-          {/* Label on the left */}
-          <div className="flex-shrink-0">
+          {/* Label on the left - Fixed width for alignment */}
+          <div className="flex-shrink-0 w-24">
             <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 whitespace-nowrap">
               Drop Zones
             </h3>
           </div>
           
           {/* Card content - Stretches to fit content horizontally */}
-          <div className="flex-1 h-[133px] bg-gray-100 dark:bg-gray-800 rounded-lg p-3 border-2 border-purple-300 dark:border-purple-700 flex flex-col overflow-hidden">
+          <div className="flex-1 h-[133px] bg-gray-100 dark:bg-gray-800 rounded-lg p-3 border-2 border-violet-300 dark:border-violet-500 flex flex-col overflow-hidden shadow-md">
             {/* Drop zones inside card - horizontal layout */}
             <div className="flex flex-nowrap gap-2 justify-start items-center overflow-hidden flex-1">
               {currentRound.placeholders.map((roleId) => {
@@ -110,15 +132,15 @@ export function GameBoard() {
 
         {/* Name Cards Card */}
         <div className="flex gap-2 items-start">
-          {/* Label on the left */}
-          <div className="flex-shrink-0">
+          {/* Label on the left - Fixed width for alignment */}
+          <div className="flex-shrink-0 w-24">
             <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 whitespace-nowrap">
               Name Cards
             </h3>
           </div>
           
           {/* Card content - Stretches to fit content horizontally */}
-          <div className="flex-1 h-[133px] bg-gray-100 dark:bg-gray-800 rounded-lg p-3 border-2 border-teal-300 dark:border-teal-700 flex flex-col overflow-hidden">
+          <div className="flex-1 h-[133px] bg-gray-100 dark:bg-gray-800 rounded-lg p-3 border-2 border-emerald-300 dark:border-emerald-500 flex flex-col overflow-hidden shadow-md">
             {/* Name cards inside - horizontal layout with skip button */}
             <div className="flex flex-nowrap gap-2 justify-center items-center overflow-hidden flex-1 relative">
               {currentRound.people.map((person) => (
@@ -136,11 +158,8 @@ export function GameBoard() {
         {/* Status Message - Below Name Cards */}
         {showRoundComplete && (
           <div className="flex gap-2 items-start">
-            {/* Spacer to align with labels */}
-            <div className="flex-shrink-0">
-              <div className="text-sm font-bold text-transparent whitespace-nowrap">
-                Name Cards
-              </div>
+            {/* Spacer to align with labels - Fixed width */}
+            <div className="flex-shrink-0 w-24">
             </div>
             
             {/* Status message - Same width as cards */}
@@ -152,6 +171,43 @@ export function GameBoard() {
 
         {/* Game Complete Prompt - Below Name Cards */}
         <GameCompletePrompt />
+
+        {/* Winner Section - Below Game Complete Prompt */}
+        {showGameComplete && (
+          <div className="flex gap-2 items-start">
+            {/* Spacer to align with labels - Fixed width */}
+            <div className="flex-shrink-0 w-24">
+            </div>
+            
+            {/* Winner display - Same width as cards */}
+            <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-4 border-2 border-rose-300 dark:border-rose-500 shadow-md">
+              <div className="text-center">
+                {winner ? (
+                  <>
+                    <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mb-2">
+                      🏆 Winner 🏆
+                    </div>
+                    <div className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+                      {winner.name}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Total Score: {winner.score}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mb-2">
+                      🏆 It's a Tie! 🏆
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Multiple players tied with the highest score
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <DragOverlay>

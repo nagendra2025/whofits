@@ -135,7 +135,7 @@ export function PlayerSetupModal() {
                 </h4>
                 <ul className="text-xs text-gray-700 dark:text-gray-300 space-y-1 ml-4 list-disc">
                   <li>Drag name cards to the matching role drop zones</li>
-                  <li>Match all 3 name cards correctly to complete the round</li>
+                  <li>Match all 3 name cards correctly to complete the turn</li>
                   <li>Take turns with other players</li>
                   <li>Player with highest total score wins!</li>
                 </ul>
@@ -158,7 +158,7 @@ export function PlayerSetupModal() {
                   Skip Feature:
                 </h4>
                 <p className="text-xs text-gray-700 dark:text-gray-300 mb-3">
-                  Each player can skip a round to get new name cards. Skip is only available <span className="font-semibold">before you make your first move</span> in a round.
+                  Each player can skip a turn to get new name cards. Skip is only available <span className="font-semibold">before you make your first move</span> in a turn.
                 </p>
                 
                 {/* Game Configuration Table */}
@@ -171,7 +171,7 @@ export function PlayerSetupModal() {
                           Players
                         </th>
                         <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center font-semibold text-gray-900 dark:text-gray-100">
-                          Rounds
+                          Turns
                         </th>
                         <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center font-semibold text-gray-900 dark:text-gray-100">
                           Skips/Player

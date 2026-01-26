@@ -20,7 +20,7 @@ export default function Home() {
               WhoFits?
             </h1>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Place the person where they truly fit.
+              Match each celebrity to their professional role.
             </p>
           </div>
 
