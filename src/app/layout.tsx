@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "WhoFits? - Place the person where they truly fit",
+  title: "WhoFits? - Match each celebrity to their professional role",
   description: "A visual, turn-based drag-and-drop knowledge game where players identify real-world personalities using recognisable caricature-style illustrations and match them to the correct role.",
 };
 
