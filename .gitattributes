@@ -1,0 +1,11 @@
+# Normalize line endings to LF to prevent phantom changes on Windows
+* text=auto eol=lf
+
+# Binary files: do not touch
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
