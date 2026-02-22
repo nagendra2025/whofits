@@ -7,14 +7,12 @@ export function DeviceCheck({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const checkDevice = () => {
-      // Check screen width (tablets are typically up to 1024px)
-      const isSmallScreen = window.innerWidth < 1024;
-      
-      // Check if it's a touch device (mobile/tablet)
-      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-      
-      // Consider it mobile/tablet if either condition is true
-      setIsMobileOrTablet(isSmallScreen || isTouchDevice);
+      // Use pointer accuracy: phones/tablets have coarse (finger) only;
+      // laptops/desktops have fine pointer (mouse/trackpad). This allows touchscreen
+      // laptops (they have trackpad) and blocks phones/iPads. Avoids false blocks from
+      // navigator.maxTouchPoints (touchscreen laptops) and viewport scaling (150%/200%).
+      const hasFinePointer = window.matchMedia('(any-pointer: fine)').matches;
+      setIsMobileOrTablet(!hasFinePointer);
     };
 
     // Check on mount
